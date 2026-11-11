@@ -1,0 +1,33 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: demo-api
+  namespace: demo-api
+  labels:
+    app.kubernetes.io/name: demo-api
+spec:
+  selector:
+    app.kubernetes.io/name: demo-api
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+---
+# Scraped by kube-prometheus-stack. The relabeling keeps the pod-template hash Argo Rollouts
+# puts on each pod, so the analysis can tell canary pods from stable pods.
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: demo-api
+  namespace: demo-api
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: demo-api
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 15s
+      relabelings:
+        - sourceLabels: [__meta_kubernetes_pod_label_rollouts_pod_template_hash]
+          targetLabel: rollouts_pod_template_hash

@@ -62,3 +62,18 @@ results:
     resources: [untrusted-registry-pod]
     kind: Pod
     result: fail
+  - policy: restrict-image-registries
+    rule: approved-registries
+    resources: [ngc-gpu-pod]
+    kind: Pod
+    result: pass
+  - policy: pod-security-restricted
+    rule: restricted
+    resources: [ngc-gpu-pod]
+    kind: Pod
+    result: pass
+  - policy: require-requests-limits
+    rule: containers-have-resources
+    resources: [ngc-gpu-pod]
+    kind: Pod
+    result: pass

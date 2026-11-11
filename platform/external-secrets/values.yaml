@@ -1,0 +1,5 @@
+# Helm values for External Secrets Operator.
+installCRDs: true
+serviceMonitor:
+  # Rendered once the Prometheus Operator CRDs exist (renderMode defaults to skipIfMissing).
+  enabled: true

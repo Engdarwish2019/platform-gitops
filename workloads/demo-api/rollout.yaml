@@ -1,7 +1,12 @@
 # Image built, scanned and signed by github.com/Engdarwish2019/devsecops-pipeline.
 # Kyverno verifies the Cosign signature and pins the digest at admission.
-apiVersion: apps/v1
-kind: Deployment
+#
+# Every new version ships as a canary: 25% of the pods first, then Argo Rollouts reads the
+# canary's own 5xx ratio from Prometheus (analysis-template.yaml). Above 5% errors the
+# rollout aborts and traffic stays on the stable version; otherwise it moves to 50%, is
+# checked again, and is promoted. Replicas are owned by the HorizontalPodAutoscaler.
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
 metadata:
   name: demo-api
   namespace: demo-api
@@ -12,10 +17,35 @@ metadata:
     checkov.io/skip1: CKV_K8S_11=No CPU limit on purpose to avoid throttling; CPU requests are enforced
     checkov.io/skip2: CKV_K8S_43=Kyverno verify-images rewrites the tag to the signed digest at admission
 spec:
-  replicas: 2
+  revisionHistoryLimit: 3
   selector:
     matchLabels:
       app.kubernetes.io/name: demo-api
+  strategy:
+    canary:
+      maxSurge: 1
+      maxUnavailable: 0
+      steps:
+        - setWeight: 25
+        - pause:
+            duration: 2m
+        - analysis:
+            templates:
+              - templateName: error-rate
+            args:
+              - name: canary-hash
+                valueFrom:
+                  podTemplateHashValue: Latest
+        - setWeight: 50
+        - pause:
+            duration: 2m
+        - analysis:
+            templates:
+              - templateName: error-rate
+            args:
+              - name: canary-hash
+                valueFrom:
+                  podTemplateHashValue: Latest
   template:
     metadata:
       labels:
@@ -28,6 +58,13 @@ spec:
         runAsUser: 10001
         seccompProfile:
           type: RuntimeDefault
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: topology.kubernetes.io/zone
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: demo-api
       containers:
         - name: api
           image: ghcr.io/engdarwish2019/devsecops-pipeline:main
@@ -54,28 +91,3 @@ spec:
             readOnlyRootFilesystem: true
             capabilities:
               drop: [ALL]
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: demo-api
-  namespace: demo-api
-spec:
-  selector:
-    app.kubernetes.io/name: demo-api
-  ports:
-    - name: http
-      port: 80
-      targetPort: http
----
-apiVersion: networking.k8s.io/v1
-kind: NetworkPolicy
-metadata:
-  name: demo-api
-  namespace: demo-api
-spec:
-  podSelector: {}
-  policyTypes: [Ingress, Egress]
-  ingress:
-    - ports:
-        - port: 8080

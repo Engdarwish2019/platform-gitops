@@ -5,3 +5,4 @@ metadata:
   labels:
     platform.io/tenant: "true"
     pod-security.kubernetes.io/enforce: restricted
+    istio.io/dataplane-mode: ambient

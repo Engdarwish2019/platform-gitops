@@ -10,6 +10,19 @@ configs:
     application.resourceTrackingMethod: annotation
     exec.enabled: "false"
     admin.enabled: "true"
+    # App of apps: report each child Application's health so sync waves wait for the
+    # previous wave to be Healthy (CRDs installed) instead of only for it to be created.
+    resource.customizations.health.argoproj.io_Application: |
+      hs = {}
+      hs.status = "Progressing"
+      hs.message = ""
+      if obj.status ~= nil and obj.status.health ~= nil then
+        hs.status = obj.status.health.status
+        if obj.status.health.message ~= nil then
+          hs.message = obj.status.health.message
+        end
+      end
+      return hs
   rbac:
     policy.default: role:readonly
     policy.csv: |

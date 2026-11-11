@@ -15,6 +15,10 @@ spec:
     - https://open-telemetry.github.io/opentelemetry-helm-charts
     - https://helm.ngc.nvidia.com/nvidia
     - https://backstage.github.io/charts
+    - https://argoproj.github.io/argo-helm
+    - https://charts.external-secrets.io
+    - https://istio-release.storage.googleapis.com/charts
+    - https://github.com/kubernetes-sigs/kueue.git
   destinations:
     - server: https://kubernetes.default.svc
       namespace: "*"

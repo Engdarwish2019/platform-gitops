@@ -1,0 +1,2 @@
+# Helm values for Kueue: expose its queue and admission metrics to Prometheus.
+enablePrometheus: true

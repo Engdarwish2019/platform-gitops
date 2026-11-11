@@ -1,0 +1,48 @@
+# Smoke test for the GPU path: Kueue's webhook creates this Job suspended (it carries a
+# queue-name label) and starts it only when the gpu ClusterQueue has quota. Jobs are
+# immutable: delete it to run it again, Argo CD recreates it.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: cuda-vectoradd
+  namespace: ml-batch
+  labels:
+    kueue.x-k8s.io/queue-name: gpu
+    app.kubernetes.io/name: cuda-vectoradd
+    app.kubernetes.io/part-of: ml-batch
+  annotations:
+    checkov.io/skip1: CKV_K8S_11=No CPU limit on purpose; CPU requests are enforced
+    checkov.io/skip2: CKV_K8S_43=Release tag from NVIDIA NGC; restrict-image-registries limits the source
+spec:
+  backoffLimit: 0
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: cuda-vectoradd
+        app.kubernetes.io/part-of: ml-batch
+    spec:
+      restartPolicy: Never
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: vectoradd
+          image: nvcr.io/nvidia/k8s/cuda-sample:vectoradd-cuda12.5.0
+          imagePullPolicy: Always
+          resources:
+            requests:
+              cpu: 500m
+              memory: 512Mi
+              nvidia.com/gpu: "1"
+            limits:
+              memory: 512Mi
+              nvidia.com/gpu: "1"
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]

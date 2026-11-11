@@ -1,0 +1,31 @@
+# Istio ambient mode (no sidecars): ztunnel on each node gives every pod in this namespace
+# a SPIFFE identity and mutual TLS. STRICT refuses any plaintext connection.
+apiVersion: security.istio.io/v1
+kind: PeerAuthentication
+metadata:
+  name: default
+  namespace: demo-api
+spec:
+  mtls:
+    mode: STRICT
+---
+# Zero trust inside the cluster: deny by default, then allow only Prometheus (its namespace
+# is in the mesh too) to reach the API port. Add the namespaces or service account
+# principals of real callers here; without a waypoint proxy ztunnel enforces these Layer 4 rules.
+apiVersion: security.istio.io/v1
+kind: AuthorizationPolicy
+metadata:
+  name: demo-api
+  namespace: demo-api
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: demo-api
+  action: ALLOW
+  rules:
+    - from:
+        - source:
+            namespaces: [monitoring]
+      to:
+        - operation:
+            ports: ["8080"]

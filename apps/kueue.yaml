@@ -1,0 +1,40 @@
+# Kueue: job queueing and GPU quotas for batch and training work, the Kubernetes
+# counterpart of Slurm partitions and job queues. Chart rendered from the release tag.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kueue
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-3"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: platform
+  sources:
+    - repoURL: https://github.com/kubernetes-sigs/kueue.git
+      targetRevision: v0.20.5
+      path: charts/kueue
+      helm:
+        releaseName: kueue
+        valueFiles:
+          - $values/platform/kueue/values.yaml
+    - repoURL: https://github.com/Engdarwish2019/platform-gitops.git
+      targetRevision: main
+      ref: values
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kueue-system
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 30s
+        factor: 2
+        maxDuration: 5m

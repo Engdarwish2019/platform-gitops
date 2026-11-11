@@ -39,7 +39,8 @@ jobs:
 
       - name: Validate manifests
         run: |
-          find apps bootstrap workloads teams policies platform/crossplane backstage/templates/new-service/skeleton \
+          find apps bootstrap workloads teams policies backstage/templates/new-service/skeleton \
+            platform/crossplane platform/external-secrets platform/kueue platform/observability/secrets \
             -name '*.yaml' ! -name '*values*' ! -name 'catalog-info.yaml' ! -path '*/tests/*' -print0 \
           | xargs -0 kubeconform -strict -summary -ignore-missing-schemas \
               -schema-location default \

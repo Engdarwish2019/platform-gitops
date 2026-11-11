@@ -1,0 +1,24 @@
+# Canary gate: the share of 5xx responses served by the canary pods only (selected by their
+# rollouts-pod-template-hash label, which the ServiceMonitor copies onto every series).
+# "or vector(0)" and clamp_min keep the query defined when the canary has had no traffic yet.
+apiVersion: argoproj.io/v1alpha1
+kind: AnalysisTemplate
+metadata:
+  name: error-rate
+  namespace: demo-api
+spec:
+  args:
+    - name: canary-hash
+  metrics:
+    - name: error-rate
+      interval: 30s
+      count: 4
+      failureLimit: 1
+      successCondition: result[0] <= 0.05
+      provider:
+        prometheus:
+          address: http://kube-prometheus-stack-prometheus.monitoring.svc:9090
+          query: |
+            (sum(rate(http_requests_total{namespace="demo-api",rollouts_pod_template_hash="{{args.canary-hash}}",status=~"5.."}[2m])) or vector(0))
+            /
+            clamp_min(sum(rate(http_requests_total{namespace="demo-api",rollouts_pod_template_hash="{{args.canary-hash}}"}[2m])) or vector(0), 0.001)

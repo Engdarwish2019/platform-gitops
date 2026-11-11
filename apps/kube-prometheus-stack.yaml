@@ -20,6 +20,10 @@ spec:
     - repoURL: https://github.com/Engdarwish2019/platform-gitops.git
       targetRevision: main
       ref: values
+    # Grafana admin secret, pulled from Vault by External Secrets
+    - repoURL: https://github.com/Engdarwish2019/platform-gitops.git
+      targetRevision: main
+      path: platform/observability/secrets
   destination:
     server: https://kubernetes.default.svc
     namespace: monitoring
@@ -30,3 +34,14 @@ spec:
     syncOptions:
       - CreateNamespace=true
       - ServerSideApply=true
+    managedNamespaceMetadata:
+      labels:
+        # In the Istio ambient mesh (PERMISSIVE), so Prometheus can scrape STRICT mTLS
+        # workloads such as demo-api while plaintext clients still reach it.
+        istio.io/dataplane-mode: ambient
+    retry:
+      limit: 5
+      backoff:
+        duration: 30s
+        factor: 2
+        maxDuration: 5m

@@ -1,0 +1,4 @@
+# Shared Helm values for the Istio charts (istiod, cni). Ambient mode: no sidecars, a
+# per-node ztunnel does mTLS. On GKE also set `global.platform: gke`; on other platforms
+# check https://istio.io/latest/docs/ambient/install/platform-prerequisites/ first.
+profile: ambient

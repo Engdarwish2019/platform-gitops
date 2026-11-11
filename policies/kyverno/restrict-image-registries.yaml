@@ -17,10 +17,10 @@ spec:
                 matchLabels:
                   platform.io/tenant: "true"
       validate:
-        message: "Images must come from ghcr.io/engdarwish2019 or the approved vLLM image."
+        message: "Images must come from ghcr.io/engdarwish2019, NVIDIA NGC (nvcr.io/nvidia) or the approved vLLM image."
         pattern:
           spec:
             =(initContainers):
-              - image: "ghcr.io/engdarwish2019/* | docker.io/vllm/vllm-openai:* | vllm/vllm-openai:*"
+              - image: "ghcr.io/engdarwish2019/* | nvcr.io/nvidia/* | docker.io/vllm/vllm-openai:* | vllm/vllm-openai:*"
             containers:
-              - image: "ghcr.io/engdarwish2019/* | docker.io/vllm/vllm-openai:* | vllm/vllm-openai:*"
+              - image: "ghcr.io/engdarwish2019/* | nvcr.io/nvidia/* | docker.io/vllm/vllm-openai:* | vllm/vllm-openai:*"

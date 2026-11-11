@@ -168,3 +168,33 @@ spec:
         memory: 128Mi
       limits:
         memory: 256Mi
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: ngc-gpu-pod
+  namespace: team-a
+  labels:
+    app.kubernetes.io/name: cuda-vectoradd
+    app.kubernetes.io/part-of: ml-batch
+spec:
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 10001
+    seccompProfile:
+      type: RuntimeDefault
+  containers:
+  - name: vectoradd
+    image: nvcr.io/nvidia/k8s/cuda-sample:vectoradd-cuda12.5.0
+    securityContext:
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop:
+        - ALL
+      runAsNonRoot: true
+    resources:
+      requests:
+        cpu: 500m
+        memory: 512Mi
+      limits:
+        memory: 512Mi

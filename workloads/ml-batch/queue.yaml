@@ -1,0 +1,18 @@
+# Teams submit to their LocalQueue; it draws on the cluster-wide gpu ClusterQueue.
+apiVersion: kueue.x-k8s.io/v1beta2
+kind: LocalQueue
+metadata:
+  name: gpu
+  namespace: ml-batch
+spec:
+  clusterQueue: gpu
+---
+# Batch jobs here need no network at all.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny
+  namespace: ml-batch
+spec:
+  podSelector: {}
+  policyTypes: [Ingress, Egress]
