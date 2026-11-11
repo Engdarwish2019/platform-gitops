@@ -1,0 +1,9 @@
+# What a team commits to get a compliant S3 bucket. Argo CD applies it, Crossplane builds it.
+apiVersion: platform.engdarwish.io/v1alpha1
+kind: ObjectStorage
+metadata:
+  name: ml-datasets
+  namespace: team-a
+spec:
+  region: eu-central-1
+  retentionDays: 180

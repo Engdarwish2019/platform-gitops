@@ -1,0 +1,89 @@
+# Every bucket is private, encrypted with KMS and versioned by default. Teams cannot opt out.
+apiVersion: apiextensions.crossplane.io/v1
+kind: Composition
+metadata:
+  name: objectstorage-aws-s3
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+  labels:
+    provider: aws
+spec:
+  compositeTypeRef:
+    apiVersion: platform.engdarwish.io/v1alpha1
+    kind: XObjectStorage
+  mode: Pipeline
+  pipeline:
+    - step: patch-and-transform
+      functionRef:
+        name: function-patch-and-transform
+      input:
+        apiVersion: pt.fn.crossplane.io/v1beta1
+        kind: Resources
+        resources:
+          - name: bucket
+            base:
+              apiVersion: s3.aws.upbound.io/v1beta1
+              kind: Bucket
+              spec:
+                forProvider:
+                  region: eu-central-1
+            patches:
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.region
+                toFieldPath: spec.forProvider.region
+            connectionDetails:
+              - name: bucket
+                type: FromFieldPath
+                fromFieldPath: status.atProvider.id
+
+          - name: public-access-block
+            base:
+              apiVersion: s3.aws.upbound.io/v1beta1
+              kind: BucketPublicAccessBlock
+              spec:
+                forProvider:
+                  region: eu-central-1
+                  bucketSelector:
+                    matchControllerRef: true
+                  blockPublicAcls: true
+                  blockPublicPolicy: true
+                  ignorePublicAcls: true
+                  restrictPublicBuckets: true
+            patches:
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.region
+                toFieldPath: spec.forProvider.region
+
+          - name: encryption
+            base:
+              apiVersion: s3.aws.upbound.io/v1beta1
+              kind: BucketServerSideEncryptionConfiguration
+              spec:
+                forProvider:
+                  region: eu-central-1
+                  bucketSelector:
+                    matchControllerRef: true
+                  rule:
+                    - applyServerSideEncryptionByDefault:
+                        - sseAlgorithm: aws:kms
+                      bucketKeyEnabled: true
+            patches:
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.region
+                toFieldPath: spec.forProvider.region
+
+          - name: versioning
+            base:
+              apiVersion: s3.aws.upbound.io/v1beta1
+              kind: BucketVersioning
+              spec:
+                forProvider:
+                  region: eu-central-1
+                  bucketSelector:
+                    matchControllerRef: true
+                  versioningConfiguration:
+                    - status: Enabled
+            patches:
+              - type: FromCompositeFieldPath
+                fromFieldPath: spec.region
+                toFieldPath: spec.forProvider.region

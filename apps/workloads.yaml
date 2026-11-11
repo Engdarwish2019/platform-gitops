@@ -1,0 +1,35 @@
+# One Application per directory under workloads/. Adding a folder adds an app.
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: workloads
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "5"
+spec:
+  goTemplate: true
+  goTemplateOptions: ["missingkey=error"]
+  generators:
+    - git:
+        repoURL: https://github.com/Engdarwish2019/platform-gitops.git
+        revision: main
+        directories:
+          - path: workloads/*
+  template:
+    metadata:
+      name: "workload-{{.path.basename}}"
+    spec:
+      project: workloads
+      source:
+        repoURL: https://github.com/Engdarwish2019/platform-gitops.git
+        targetRevision: main
+        path: "{{.path.path}}"
+        directory:
+          exclude: catalog-info.yaml
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: "{{.path.basename}}"
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true

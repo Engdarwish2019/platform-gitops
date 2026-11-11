@@ -1,0 +1,79 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  KUBECONFORM_VERSION: v0.6.7
+  KYVERNO_VERSION: v1.12.5
+
+jobs:
+  lint:
+    name: yamllint / shellcheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: pip install yamllint==1.38.0
+      - run: yamllint .
+      - run: shellcheck bootstrap/*.sh
+
+  kubeconform:
+    name: kubeconform (Kubernetes + CRD schemas)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install kubeconform
+        run: |
+          curl -fsSL "https://github.com/yannh/kubeconform/releases/download/${KUBECONFORM_VERSION}/kubeconform-linux-amd64.tar.gz" | tar xz
+          sudo mv kubeconform /usr/local/bin/
+
+      - name: Validate manifests
+        run: |
+          find apps bootstrap workloads teams policies platform/crossplane backstage/templates/new-service/skeleton \
+            -name '*.yaml' ! -name '*values*' ! -name 'catalog-info.yaml' ! -path '*/tests/*' -print0 \
+          | xargs -0 kubeconform -strict -summary -ignore-missing-schemas \
+              -schema-location default \
+              -schema-location 'https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json'
+
+  kyverno:
+    name: kyverno test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install the Kyverno CLI
+        run: |
+          curl -fsSL "https://github.com/kyverno/kyverno/releases/download/${KYVERNO_VERSION}/kyverno-cli_${KYVERNO_VERSION}_linux_x86_64.tar.gz" | tar xz kyverno
+          sudo mv kyverno /usr/local/bin/
+
+      - name: Run policy tests
+        run: kyverno test policies/kyverno/tests --detailed-results
+
+  security:
+    name: checkov / gitleaks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
+      - name: checkov (Kubernetes manifests)
+        uses: bridgecrewio/checkov-action@v12
+        with:
+          directory: workloads
+          framework: kubernetes
+          quiet: true

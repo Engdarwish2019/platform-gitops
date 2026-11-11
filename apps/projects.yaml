@@ -1,0 +1,46 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: platform
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-10"
+spec:
+  description: Cluster add-ons owned by the platform team
+  sourceRepos:
+    - https://github.com/Engdarwish2019/platform-gitops.git
+    - https://kyverno.github.io/kyverno
+    - https://charts.crossplane.io/stable
+    - https://prometheus-community.github.io/helm-charts
+    - https://open-telemetry.github.io/opentelemetry-helm-charts
+    - https://helm.ngc.nvidia.com/nvidia
+    - https://backstage.github.io/charts
+  destinations:
+    - server: https://kubernetes.default.svc
+      namespace: "*"
+  clusterResourceWhitelist:
+    - group: "*"
+      kind: "*"
+---
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: workloads
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-10"
+spec:
+  description: Team workloads. Namespaced resources only, from this repository only.
+  sourceRepos:
+    - https://github.com/Engdarwish2019/platform-gitops.git
+  destinations:
+    - server: https://kubernetes.default.svc
+      namespace: "*"
+  clusterResourceWhitelist:
+    - group: ""
+      kind: Namespace
+  namespaceResourceBlacklist:
+    - group: ""
+      kind: ResourceQuota
+    - group: ""
+      kind: LimitRange

@@ -1,0 +1,46 @@
+# Default deny, then allow only what the model server needs.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny
+  namespace: ai-inference
+spec:
+  podSelector: {}
+  policyTypes: [Ingress, Egress]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: vllm
+  namespace: ai-inference
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: vllm
+  policyTypes: [Ingress, Egress]
+  ingress:
+    # Clients in tenant namespaces and Prometheus scraping /metrics
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              platform.io/tenant: "true"
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: monitoring
+      ports:
+        - port: 8000
+  egress:
+    # DNS
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+      ports:
+        - port: 53
+          protocol: UDP
+        - port: 53
+          protocol: TCP
+    # Model download from Hugging Face over HTTPS
+    - ports:
+        - port: 443
+          protocol: TCP

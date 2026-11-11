@@ -1,0 +1,38 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: disallow-latest-tag
+  annotations:
+    policies.kyverno.io/title: Disallow untagged and latest images
+spec:
+  validationFailureAction: Enforce
+  background: true
+  rules:
+    - name: require-image-tag
+      match:
+        any:
+          - resources:
+              kinds: [Pod]
+              namespaceSelector:
+                matchLabels:
+                  platform.io/tenant: "true"
+      validate:
+        message: "An image tag or digest is required."
+        pattern:
+          spec:
+            containers:
+              - image: "*:* | *@sha256:*"
+    - name: disallow-latest
+      match:
+        any:
+          - resources:
+              kinds: [Pod]
+              namespaceSelector:
+                matchLabels:
+                  platform.io/tenant: "true"
+      validate:
+        message: "The mutable tag 'latest' is not allowed."
+        pattern:
+          spec:
+            containers:
+              - image: "!*:latest"

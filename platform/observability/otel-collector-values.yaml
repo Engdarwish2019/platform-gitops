@@ -1,0 +1,44 @@
+# Helm values for opentelemetry-collector: OTLP in, Prometheus remote write out.
+mode: deployment
+image:
+  repository: otel/opentelemetry-collector-contrib
+command:
+  name: otelcol-contrib
+presets:
+  kubernetesAttributes:
+    enabled: true
+config:
+  receivers:
+    otlp:
+      protocols:
+        grpc:
+          endpoint: ${env:MY_POD_IP}:4317
+        http:
+          endpoint: ${env:MY_POD_IP}:4318
+  processors:
+    batch: {}
+    memory_limiter:
+      check_interval: 5s
+      limit_percentage: 80
+      spike_limit_percentage: 25
+  exporters:
+    prometheusremotewrite:
+      endpoint: http://kube-prometheus-stack-prometheus.monitoring.svc:9090/api/v1/write
+    debug:
+      verbosity: basic
+  service:
+    pipelines:
+      metrics:
+        receivers: [otlp]
+        processors: [memory_limiter, batch]
+        exporters: [prometheusremotewrite]
+      traces:
+        receivers: [otlp]
+        processors: [memory_limiter, batch]
+        exporters: [debug]
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    memory: 512Mi

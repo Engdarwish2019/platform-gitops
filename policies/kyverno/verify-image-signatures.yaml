@@ -1,0 +1,31 @@
+# Images built by the devsecops-pipeline repository are signed keyless with Cosign
+# (GitHub OIDC). Only images signed by that workflow on main may run.
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: verify-image-signatures
+  annotations:
+    policies.kyverno.io/title: Verify Cosign keyless signatures
+spec:
+  validationFailureAction: Enforce
+  webhookTimeoutSeconds: 30
+  background: false
+  rules:
+    - name: signed-by-devsecops-pipeline
+      match:
+        any:
+          - resources:
+              kinds: [Pod]
+      verifyImages:
+        - imageReferences:
+            - "ghcr.io/engdarwish2019/*"
+          mutateDigest: true
+          verifyDigest: true
+          required: true
+          attestors:
+            - entries:
+                - keyless:
+                    subject: "https://github.com/Engdarwish2019/devsecops-pipeline/.github/workflows/*@refs/heads/main"
+                    issuer: "https://token.actions.githubusercontent.com"
+                    rekor:
+                      url: https://rekor.sigstore.dev

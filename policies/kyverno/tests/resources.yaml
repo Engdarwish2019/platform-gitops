@@ -1,0 +1,170 @@
+# Test pods for kyverno test. One passes everything, each other one breaks exactly one rule.
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: good-pod
+  namespace: team-a
+  labels:
+    app.kubernetes.io/name: demo-api
+    app.kubernetes.io/part-of: demo
+spec:
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    seccompProfile:
+      type: RuntimeDefault
+  containers:
+  - name: app
+    image: ghcr.io/engdarwish2019/devsecops-pipeline:1.0.0
+    securityContext:
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop:
+        - ALL
+      runAsNonRoot: true
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        memory: 256Mi
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: unlabeled-pod
+  namespace: team-a
+  labels:
+    app: x
+spec:
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    seccompProfile:
+      type: RuntimeDefault
+  containers:
+  - name: app
+    image: ghcr.io/engdarwish2019/devsecops-pipeline:1.0.0
+    securityContext:
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop:
+        - ALL
+      runAsNonRoot: true
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        memory: 256Mi
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: privileged-pod
+  namespace: team-a
+  labels:
+    app.kubernetes.io/name: demo-api
+    app.kubernetes.io/part-of: demo
+spec:
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    seccompProfile:
+      type: RuntimeDefault
+  containers:
+  - name: app
+    image: ghcr.io/engdarwish2019/devsecops-pipeline:1.0.0
+    securityContext:
+      privileged: true
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        memory: 256Mi
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: no-limits-pod
+  namespace: team-a
+  labels:
+    app.kubernetes.io/name: demo-api
+    app.kubernetes.io/part-of: demo
+spec:
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    seccompProfile:
+      type: RuntimeDefault
+  containers:
+  - name: app
+    image: ghcr.io/engdarwish2019/devsecops-pipeline:1.0.0
+    securityContext:
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop:
+        - ALL
+      runAsNonRoot: true
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: latest-pod
+  namespace: team-a
+  labels:
+    app.kubernetes.io/name: demo-api
+    app.kubernetes.io/part-of: demo
+spec:
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    seccompProfile:
+      type: RuntimeDefault
+  containers:
+  - name: app
+    image: ghcr.io/engdarwish2019/devsecops-pipeline:latest
+    securityContext:
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop:
+        - ALL
+      runAsNonRoot: true
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        memory: 256Mi
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: untrusted-registry-pod
+  namespace: team-a
+  labels:
+    app.kubernetes.io/name: demo-api
+    app.kubernetes.io/part-of: demo
+spec:
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    seccompProfile:
+      type: RuntimeDefault
+  containers:
+  - name: app
+    image: docker.io/library/nginx:1.27
+    securityContext:
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop:
+        - ALL
+      runAsNonRoot: true
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        memory: 256Mi

@@ -1,0 +1,33 @@
+apiVersion: pkg.crossplane.io/v1
+kind: Provider
+metadata:
+  name: provider-aws-s3
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+spec:
+  package: xpkg.upbound.io/upbound/provider-aws-s3:v1.16.0
+  runtimeConfigRef:
+    name: aws-irsa
+---
+# The provider pod uses an IAM role through IRSA. No AWS keys in the cluster.
+apiVersion: pkg.crossplane.io/v1beta1
+kind: DeploymentRuntimeConfig
+metadata:
+  name: aws-irsa
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  serviceAccountTemplate:
+    metadata:
+      name: provider-aws
+      annotations:
+        eks.amazonaws.com/role-arn: arn:aws:iam::111122223333:role/crossplane-provider-aws
+---
+apiVersion: pkg.crossplane.io/v1beta1
+kind: Function
+metadata:
+  name: function-patch-and-transform
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+spec:
+  package: xpkg.upbound.io/crossplane-contrib/function-patch-and-transform:v0.7.0

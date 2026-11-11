@@ -1,0 +1,35 @@
+# Self-service infrastructure claims (Crossplane) committed by teams.
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: team-claims
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "5"
+spec:
+  goTemplate: true
+  goTemplateOptions: ["missingkey=error"]
+  generators:
+    - git:
+        repoURL: https://github.com/Engdarwish2019/platform-gitops.git
+        revision: main
+        directories:
+          - path: teams/*
+  template:
+    metadata:
+      name: "claims-{{.path.basename}}"
+    spec:
+      project: platform
+      source:
+        repoURL: https://github.com/Engdarwish2019/platform-gitops.git
+        targetRevision: main
+        path: "{{.path.path}}"
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: "{{.path.basename}}"
+      syncPolicy:
+        automated:
+          prune: false
+          selfHeal: true
+        syncOptions:
+          - CreateNamespace=true

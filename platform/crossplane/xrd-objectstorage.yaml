@@ -1,0 +1,37 @@
+# Self-service API: teams ask for "ObjectStorage", the platform decides how it is built.
+apiVersion: apiextensions.crossplane.io/v1
+kind: CompositeResourceDefinition
+metadata:
+  name: xobjectstorages.platform.engdarwish.io
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  group: platform.engdarwish.io
+  names:
+    kind: XObjectStorage
+    plural: xobjectstorages
+  claimNames:
+    kind: ObjectStorage
+    plural: objectstorages
+  versions:
+    - name: v1alpha1
+      served: true
+      referenceable: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              properties:
+                region:
+                  type: string
+                  description: AWS region for the bucket.
+                  default: eu-central-1
+                retentionDays:
+                  type: integer
+                  description: Informational tag for data owners. Versioning is always on.
+                  minimum: 1
+                  default: 90
+          required:
+            - spec

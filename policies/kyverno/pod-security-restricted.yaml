@@ -1,0 +1,25 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: pod-security-restricted
+  annotations:
+    policies.kyverno.io/title: Pod Security Standard - restricted
+    policies.kyverno.io/description: >-
+      Tenant pods must meet the Kubernetes "restricted" Pod Security Standard:
+      non-root, no privilege escalation, all capabilities dropped, RuntimeDefault seccomp.
+spec:
+  validationFailureAction: Enforce
+  background: true
+  rules:
+    - name: restricted
+      match:
+        any:
+          - resources:
+              kinds: [Pod]
+              namespaceSelector:
+                matchLabels:
+                  platform.io/tenant: "true"
+      validate:
+        podSecurity:
+          level: restricted
+          version: latest

@@ -1,0 +1,26 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: restrict-image-registries
+  annotations:
+    policies.kyverno.io/title: Allow images from approved registries only
+spec:
+  validationFailureAction: Enforce
+  background: true
+  rules:
+    - name: approved-registries
+      match:
+        any:
+          - resources:
+              kinds: [Pod]
+              namespaceSelector:
+                matchLabels:
+                  platform.io/tenant: "true"
+      validate:
+        message: "Images must come from ghcr.io/engdarwish2019 or the approved vLLM image."
+        pattern:
+          spec:
+            =(initContainers):
+              - image: "ghcr.io/engdarwish2019/* | docker.io/vllm/vllm-openai:* | vllm/vllm-openai:*"
+            containers:
+              - image: "ghcr.io/engdarwish2019/* | docker.io/vllm/vllm-openai:* | vllm/vllm-openai:*"

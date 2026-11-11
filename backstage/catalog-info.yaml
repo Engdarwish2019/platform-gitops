@@ -1,0 +1,67 @@
+apiVersion: backstage.io/v1alpha1
+kind: System
+metadata:
+  name: internal-developer-platform
+  description: Kubernetes platform managed with GitOps
+spec:
+  owner: group:platform-team
+---
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: argo-cd
+  description: GitOps delivery for platform add-ons and team workloads
+  annotations:
+    github.com/project-slug: Engdarwish2019/platform-gitops
+spec:
+  type: service
+  lifecycle: production
+  owner: group:platform-team
+  system: internal-developer-platform
+---
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: kyverno-policies
+  description: Admission policies enforced on tenant namespaces
+spec:
+  type: library
+  lifecycle: production
+  owner: group:platform-team
+  system: internal-developer-platform
+---
+apiVersion: backstage.io/v1alpha1
+kind: API
+metadata:
+  name: objectstorage-api
+  description: Crossplane claim that gives a team a private, encrypted, versioned S3 bucket
+spec:
+  type: openapi
+  lifecycle: production
+  owner: group:platform-team
+  system: internal-developer-platform
+  definition: |
+    openapi: 3.0.0
+    info:
+      title: ObjectStorage (platform.engdarwish.io/v1alpha1)
+      version: v1alpha1
+    paths: {}
+---
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: vllm-inference
+  description: OpenAI-compatible LLM serving with vLLM on GPU nodes
+spec:
+  type: service
+  lifecycle: experimental
+  owner: group:platform-team
+  system: internal-developer-platform
+---
+apiVersion: backstage.io/v1alpha1
+kind: Group
+metadata:
+  name: platform-team
+spec:
+  type: team
+  children: []

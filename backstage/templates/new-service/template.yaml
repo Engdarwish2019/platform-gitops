@@ -1,0 +1,50 @@
+# Golden path: a new service gets a namespace, a compliant Deployment and an Argo CD app
+# by opening a pull request against this repository.
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: new-service
+  title: New service on the platform
+  description: Creates a tenant namespace and a Deployment that passes every Kyverno policy.
+spec:
+  owner: group:platform-team
+  type: service
+  parameters:
+    - title: Service
+      required: [name, owner, image]
+      properties:
+        name:
+          title: Name
+          type: string
+          pattern: "^[a-z][a-z0-9-]{2,30}$"
+        owner:
+          title: Owner team
+          type: string
+          ui:field: OwnerPicker
+        image:
+          title: Image (ghcr.io/engdarwish2019/...)
+          type: string
+          pattern: "^ghcr.io/engdarwish2019/.+:[^:]+$"
+  steps:
+    - id: fetch
+      name: Render the skeleton
+      action: fetch:template
+      input:
+        url: ./skeleton
+        targetPath: workloads/${{ parameters.name }}
+        values:
+          name: ${{ parameters.name }}
+          owner: ${{ parameters.owner }}
+          image: ${{ parameters.image }}
+    - id: pr
+      name: Open a pull request
+      action: publish:github:pull-request
+      input:
+        repoUrl: github.com?owner=Engdarwish2019&repo=platform-gitops
+        branchName: add-${{ parameters.name }}
+        title: "Add workload ${{ parameters.name }}"
+        description: Created from the Backstage new-service template.
+  output:
+    links:
+      - title: Pull request
+        url: ${{ steps.pr.output.remoteUrl }}

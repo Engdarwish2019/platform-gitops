@@ -1,0 +1,81 @@
+# Image built, scanned and signed by github.com/Engdarwish2019/devsecops-pipeline.
+# Kyverno verifies the Cosign signature and pins the digest at admission.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: demo-api
+  namespace: demo-api
+  labels:
+    app.kubernetes.io/name: demo-api
+    app.kubernetes.io/part-of: demo-api
+  annotations:
+    checkov.io/skip1: CKV_K8S_11=No CPU limit on purpose to avoid throttling; CPU requests are enforced
+    checkov.io/skip2: CKV_K8S_43=Kyverno verify-images rewrites the tag to the signed digest at admission
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: demo-api
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: demo-api
+        app.kubernetes.io/part-of: demo-api
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: api
+          image: ghcr.io/engdarwish2019/devsecops-pipeline:main
+          imagePullPolicy: Always
+          ports:
+            - name: http
+              containerPort: 8080
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              memory: 128Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: demo-api
+  namespace: demo-api
+spec:
+  selector:
+    app.kubernetes.io/name: demo-api
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: demo-api
+  namespace: demo-api
+spec:
+  podSelector: {}
+  policyTypes: [Ingress, Egress]
+  ingress:
+    - ports:
+        - port: 8080

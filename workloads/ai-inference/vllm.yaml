@@ -1,0 +1,115 @@
+# OpenAI-compatible LLM endpoint served by vLLM on one GPU.
+# Small model on purpose so it fits a T4 / A10G: change MODEL for bigger GPUs.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vllm
+  namespace: ai-inference
+  labels:
+    app.kubernetes.io/name: vllm
+    app.kubernetes.io/part-of: ai-inference
+  annotations:
+    checkov.io/skip1: CKV_K8S_11=No CPU limit on purpose, it throttles inference; CPU requests are enforced
+    checkov.io/skip2: CKV_K8S_43=Release tag pinned and updated by Renovate; restrict-image-registries limits the source
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: vllm
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: vllm
+        app.kubernetes.io/part-of: ai-inference
+    spec:
+      automountServiceAccountToken: false
+      nodeSelector:
+        nvidia.com/gpu.present: "true"
+      tolerations:
+        - key: nvidia.com/gpu
+          operator: Exists
+          effect: NoSchedule
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: vllm
+          image: vllm/vllm-openai:v0.6.4
+          imagePullPolicy: Always
+          args:
+            - --model=Qwen/Qwen2.5-0.5B-Instruct
+            - --port=8000
+            - --max-model-len=4096
+            - --gpu-memory-utilization=0.85
+          env:
+            - name: HOME
+              value: /cache
+            - name: HF_HOME
+              value: /cache/huggingface
+          ports:
+            - name: http
+              containerPort: 8000
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 60
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 180
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: "2"
+              memory: 8Gi
+              nvidia.com/gpu: "1"
+            limits:
+              memory: 12Gi
+              nvidia.com/gpu: "1"
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
+          volumeMounts:
+            - name: cache
+              mountPath: /cache
+            - name: tmp
+              mountPath: /tmp
+            - name: shm
+              mountPath: /dev/shm
+      volumes:
+        - name: cache
+          emptyDir:
+            sizeLimit: 20Gi
+        - name: tmp
+          emptyDir:
+            sizeLimit: 2Gi
+        - name: shm
+          emptyDir:
+            medium: Memory
+            sizeLimit: 2Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: vllm
+  namespace: ai-inference
+  labels:
+    app.kubernetes.io/name: vllm
+spec:
+  selector:
+    app.kubernetes.io/name: vllm
+  ports:
+    - name: http
+      port: 8000
+      targetPort: http

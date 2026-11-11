@@ -1,0 +1,13 @@
+# Helm values for the NVIDIA GPU operator.
+# EKS AL2023 NVIDIA AMIs and GKE already ship the driver, so the operator only adds
+# the device plugin, container toolkit and DCGM exporter there.
+driver:
+  enabled: false
+toolkit:
+  enabled: true
+dcgmExporter:
+  enabled: true
+  serviceMonitor:
+    enabled: true
+nodeStatusExporter:
+  enabled: true

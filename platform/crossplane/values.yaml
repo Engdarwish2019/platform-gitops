@@ -1,0 +1,9 @@
+# Helm values for the crossplane chart.
+args:
+  - --enable-usages
+resourcesCrossplane:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    memory: 1Gi

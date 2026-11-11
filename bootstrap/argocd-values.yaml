@@ -1,0 +1,27 @@
+# Helm values for the Argo CD bootstrap (chart argo/argo-cd).
+global:
+  domain: argocd.example.com
+
+configs:
+  params:
+    # Admin UI behind kubectl port-forward in the lab; put an Ingress with TLS in front for real use.
+    server.insecure: false
+  cm:
+    application.resourceTrackingMethod: annotation
+    exec.enabled: "false"
+    admin.enabled: "true"
+  rbac:
+    policy.default: role:readonly
+    policy.csv: |
+      g, platform-admins, role:admin
+
+server:
+  replicas: 1
+repoServer:
+  replicas: 1
+applicationSet:
+  replicas: 1
+notifications:
+  enabled: false
+dex:
+  enabled: false

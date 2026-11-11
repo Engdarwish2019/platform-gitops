@@ -1,0 +1,28 @@
+# Helm values for kube-prometheus-stack.
+prometheus:
+  prometheusSpec:
+    retention: 15d
+    enableRemoteWriteReceiver: true
+    # Pick up ServiceMonitors and rules from every namespace, not only this release.
+    serviceMonitorSelectorNilUsesHelmValues: false
+    podMonitorSelectorNilUsesHelmValues: false
+    ruleSelectorNilUsesHelmValues: false
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          accessModes: [ReadWriteOnce]
+          resources:
+            requests:
+              storage: 50Gi
+
+alertmanager:
+  alertmanagerSpec:
+    retention: 120h
+
+grafana:
+  admin:
+    # Created out of band (External Secrets / Vault); never committed.
+    existingSecret: grafana-admin
+    userKey: admin-user
+    passwordKey: admin-password
+  defaultDashboardsTimezone: utc

@@ -1,0 +1,28 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: require-labels
+  annotations:
+    policies.kyverno.io/title: Require standard labels
+    policies.kyverno.io/description: >-
+      Every tenant pod must say what it is and which system it belongs to, so cost,
+      ownership and alerts can be traced back to a team.
+spec:
+  validationFailureAction: Enforce
+  background: true
+  rules:
+    - name: require-name-and-part-of
+      match:
+        any:
+          - resources:
+              kinds: [Pod]
+              namespaceSelector:
+                matchLabels:
+                  platform.io/tenant: "true"
+      validate:
+        message: "Labels app.kubernetes.io/name and app.kubernetes.io/part-of are required."
+        pattern:
+          metadata:
+            labels:
+              app.kubernetes.io/name: "?*"
+              app.kubernetes.io/part-of: "?*"

@@ -1,0 +1,32 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: gpu-operator
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-3"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: platform
+  sources:
+    - repoURL: https://helm.ngc.nvidia.com/nvidia
+      chart: gpu-operator
+      targetRevision: v24.9.0
+      helm:
+        releaseName: gpu-operator
+        valueFiles:
+          - $values/platform/gpu-operator/values.yaml
+    - repoURL: https://github.com/Engdarwish2019/platform-gitops.git
+      targetRevision: main
+      ref: values
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: gpu-operator
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
